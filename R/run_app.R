@@ -13,7 +13,7 @@ run_app <- function() {
 
   # Define the server logic
   server <- function(input, output, session) {
-    mod_server("wordcloud_module", glob = NULL)
+    mod_server("wordcloud_module", con = NULL)
   }
 
   # Run the application
