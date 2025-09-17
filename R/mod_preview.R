@@ -5,7 +5,7 @@
 #' @export
 #'
 #' @import shiny
-run_app <- function() {
+mod_preview <- function() {
   # Define the UI
   ui <- fluidPage(
     mod_ui("wordcloud_module")
@@ -13,7 +13,7 @@ run_app <- function() {
 
   # Define the server logic
   server <- function(input, output, session) {
-    mod_server("wordcloud_module", con = NULL)
+    mod_server("wordcloud_module", api = NULL)
   }
 
   # Run the application

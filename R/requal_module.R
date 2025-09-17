@@ -87,7 +87,12 @@ mod_server <- function(id, api) {
         # })
         # Define the output for button_output
         output$button_output <- renderText({
-            paste("Button clicked", input$button, "times")
+            paste(
+                "Button clicked",
+                input$button,
+                "times",
+                api$get_segments()$segment_text
+            )
         })
         # output$wordcloud <- wordcloud2::renderWordcloud2({
         #     req(loc$wordcloud_df)
