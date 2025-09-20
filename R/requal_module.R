@@ -172,8 +172,8 @@ mod_server <- function(id, api) {
                 }
 
                 # Fetch segments from the API based on the selected code(s)
-                wordcloud_text_input <- loc$codes |>
-                    dplyr::filter(code_id %in% selected_codes) |>
+                wordcloud_text_input <- loc$codes %>%
+                    dplyr::filter(code_id %in% selected_codes) %>%
                     dplyr::select(segment_text)
 
                 if (nrow(wordcloud_text_input) == 0) {
@@ -183,7 +183,7 @@ mod_server <- function(id, api) {
                 }
 
                 # Process the text data into a word frequency data frame
-                processed_df <- wordcloud_text_input |>
+                processed_df <- wordcloud_text_input %>%
                     tidytext::unnest_tokens(
                         word,
                         segment_text,
@@ -193,7 +193,7 @@ mod_server <- function(id, api) {
                 # Remove stop words if requested
                 if (input$remove_stopwords) {
                     # Load stopwords for the selected language
-                    language_stopwords <- tidytext::stop_words |>
+                    language_stopwords <- tidytext::stop_words %>%
                         dplyr::filter(lexicon == input$language_select)
 
                     # Parse custom stopwords
@@ -209,13 +209,13 @@ mod_server <- function(id, api) {
                         custom_stopwords
                     ))
 
-                    processed_df <- processed_df |>
+                    processed_df <- processed_df %>%
                         dplyr::filter(!word %in% all_stopwords)
                 }
 
                 # Count word frequencies
-                loc$wordcloud_df <- processed_df |>
-                    dplyr::count(word, name = "freq") |>
+                loc$wordcloud_df <- processed_df %>%
+                    dplyr::count(word, name = "freq") %>%
                     dplyr::arrange(desc(freq))
 
                 # Update slider range based on actual frequency data
@@ -238,7 +238,7 @@ mod_server <- function(id, api) {
         filtered_wordcloud_data <- reactive({
             req(loc$wordcloud_df)
 
-            filtered_df <- loc$wordcloud_df |>
+            filtered_df <- loc$wordcloud_df %>%
                 dplyr::filter(freq >= input$min_frequency)
 
             # Update word count info
