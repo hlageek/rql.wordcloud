@@ -1,102 +1,265 @@
-#' wordcloud UI Function
+#' Wordcloud UI Function
 #'
-#' @description A shiny Module.
+#' @description A shiny Module for generating a word cloud.
 #'
-#' @param id,input,output,session Internal parameters for {shiny}.
+#' @param id Internal parameter for {shiny}.
 #'
 #' @export
 #'
-#' @importFrom shiny NS tagList
+#' @import shiny
 mod_ui <- function(id) {
     ns <- NS(id)
     tagList(
-        h1("Requal module - w"),
-        actionButton(ns("button"), "Test"),
-        textOutput(ns("button_output")) #,
-        #wordcloud2::wordcloud2Output(ns("wordcloud"))
+        actionButton(ns("load_data_button"), "Load Requal Data"),
+        selectInput(
+            ns("code_select"),
+            "Select Code",
+            choices = NULL,
+            multiple = FALSE
+        ),
+        h5("Text Processing Options"),
+        fluidRow(
+            column(
+                6,
+                checkboxInput(
+                    ns("remove_stopwords"),
+                    "Remove stop words",
+                    value = TRUE
+                ),
+                conditionalPanel(
+                    condition = "input.remove_stopwords",
+                    ns = ns,
+                    selectInput(
+                        ns("language_select"),
+                        "Select Language for Stopwords",
+                        choices = c("en", "es", "fr", "de"), # Add more languages as needed
+                        selected = "en"
+                    ),
+                    textAreaInput(
+                        ns("custom_stopwords"),
+                        "Custom Stopwords (one per line or separated by commas)",
+                        ""
+                    )
+                )
+            ),
+            column(
+                6,
+                checkboxInput(
+                    ns("remove_punctuation"),
+                    "Remove punctuation",
+                    value = TRUE
+                )
+            )
+        ),
+        sliderInput(
+            ns("min_frequency"),
+            "Minimum Word Frequency",
+            min = 1,
+            max = 100,
+            value = 1
+        ),
+        div(
+            id = ns("word_count_info"),
+            style = "margin-bottom: 15px; color: #666; font-size: 0.9em;"
+        ),
+        conditionalPanel(
+            condition = "output.processing",
+            ns = ns,
+            div(
+                style = "text-align: center; padding: 20px;",
+                icon(
+                    "spinner",
+                    class = "fa-spin",
+                    style = "font-size: 24px; margin-right: 10px;"
+                ),
+                "Processing text data..."
+            )
+        ),
+        wordcloud2::wordcloud2Output(ns("wordcloud"))
     )
 }
 
-#' wordcloud Server Functions
+#' Wordcloud Server Function
 #'
-#' @param id Internal parameters for {shiny}.
-#' @param con Connection object for Requal database.
-#' @param user_id ID of the Requal user.
+#' @param id Internal parameter for {shiny}.
+#' @param api An instance of the RequalAPI class.
+#'
 #' @export
+#'
+#' @import shiny
 mod_server <- function(id, api) {
     moduleServer(id, function(input, output, session) {
         ns <- session$ns
-        loc <- reactiveValues()
-
-        api <- requal::RequalAPI$new(
-            NULL,
-            user_id = 1,
-            project_id = 1,
-            mode = "mock"
+        loc <- reactiveValues(
+            wordcloud_df = NULL,
+            codes = NULL,
+            processing = FALSE
         )
-        api$get_segments()
-        print(api$get_segments(
-            user_id = api$user_id,
-            project_id = api$project_id
-        ))
-        # if (!is.null(con)) {
-        #     loc$wordcloud_text_input <- dplyr::tbl(con, "segments") |>
-        #         dplyr::filter(
-        #             user_id == !!user_id,
-        #             project_id == !!project_id
-        #         ) |>
-        #         dplyr::select(segment_text) |>
-        #         dplyr::collect()
-        # } else {
-        #     loc$wordcloud_text_input <- data.frame(
-        #         segment_text = c(
-        #             "Strategic Plan​\n",
-        #             "period follows up on the efforts of Charles U…",
-        #             "best",
-        #             "h ho zrušili, aby firma mohla stát tak potřeb…",
-        #             "\n",
-        #             "maso",
-        #             "peers.​\n\n​\n\nCharles University Strategic …",
-        #             ".\nBratr: Já bych na jídle nešetřil no.\nB",
-        #             "against",
-        #             "Report",
-        #             "hlouposti",
-        #             "řeba důchodci. Že něco viděj a maj peníze, ta…",
-        #             "qua",
-        #             "Výzkumnice: (čte otázku) Lidé, kteří šetří pe…",
-        #             "pro-1-kolo",
-        #             "PřítelV: Tak jako jestli si koupím míň kvalit…",
-        #             "PřítelV: No jasný, tak si koupím třeba nový b…",
-        #             " jídle, či jiných potřebách, aby",
-        #             " jídle, či jiných potřebách, aby",
-        #             "Image Administrátor\n\n    Project\n",
-        #             "vydržel s tím",
-        #             "Codebook"
-        #         ),
-        #         stringsAsFactors = FALSE
-        #     )
-        # }
 
-        # observeEvent(input$button, {
-        #     loc$wordcloud_df <- tidytext::unnest_tokens(
-        #         loc$wordcloud_text_input,
-        #         word,
-        #         "segment_text"
-        #     ) |>
-        #         dplyr::count(word, name = "freq")
-        # })
-        # Define the output for button_output
-        output$button_output <- renderText({
-            paste(
-                "Button clicked",
-                input$button,
-                "times",
-                api$get_segments()$segment_text
+        if (is.null(api)) {
+            api <- requal::RequalAPI$new(
+                NULL,
+                user_id = 1,
+                project_id = 1,
+                mode = "mock"
+            )
+        }
+
+        # Initialize code selector with helpful placeholder
+        updateSelectInput(
+            session,
+            "code_select",
+            choices = list("Load data first..." = ""),
+            selected = ""
+        )
+
+        # Load codes data when the button is clicked
+        observeEvent(input$load_data_button, {
+            loc$codes <- api$get_segments(
+                user_id = api$user_id,
+                project_id = api$project_id
+            )
+
+            updateSelectInput(
+                session,
+                "code_select",
+                choices = c(
+                    "Select code..." = "",
+                    stats::setNames(
+                        loc$codes$code_id,
+                        loc$codes$code_name
+                    )
+                ),
+                selected = ""
             )
         })
-        # output$wordcloud <- wordcloud2::renderWordcloud2({
-        #     req(loc$wordcloud_df)
-        #     wordcloud2::wordcloud2(loc$wordcloud_df)
-        # })
+
+        # Show/hide UI elements based on state
+        output$processing <- reactive({
+            loc$processing
+        })
+        outputOptions(output, "processing", suspendWhenHidden = FALSE)
+
+        # Process text data reactively when code selection or options change
+        observeEvent(
+            {
+                list(
+                    input$code_select,
+                    input$remove_stopwords,
+                    input$remove_punctuation,
+                    input$language_select,
+                    input$custom_stopwords
+                )
+            },
+            {
+                # Skip if no valid code selected
+                if (
+                    is.null(input$code_select) ||
+                        length(input$code_select) == 0 ||
+                        input$code_select == "" ||
+                        is.null(loc$codes)
+                ) {
+                    return()
+                }
+
+                loc$processing <- TRUE
+
+                # Handle multiple code selection
+                selected_codes <- if (length(input$code_select) > 1) {
+                    input$code_select
+                } else {
+                    as.integer(input$code_select)
+                }
+
+                # Fetch segments from the API based on the selected code(s)
+                wordcloud_text_input <- loc$codes |>
+                    dplyr::filter(code_id %in% selected_codes) |>
+                    dplyr::select(segment_text)
+
+                if (nrow(wordcloud_text_input) == 0) {
+                    loc$wordcloud_df <- NULL
+                    loc$processing <- FALSE
+                    return()
+                }
+
+                # Process the text data into a word frequency data frame
+                processed_df <- wordcloud_text_input |>
+                    tidytext::unnest_tokens(
+                        word,
+                        segment_text,
+                        strip_punct = input$remove_punctuation
+                    )
+
+                # Remove stop words if requested
+                if (input$remove_stopwords) {
+                    # Load stopwords for the selected language
+                    language_stopwords <- tidytext::stop_words |>
+                        dplyr::filter(lexicon == input$language_select)
+
+                    # Parse custom stopwords
+                    custom_stopwords <- strsplit(
+                        input$custom_stopwords,
+                        "\\s*,\\s*|\\s*\\n\\s*"
+                    )[[1]]
+                    custom_stopwords <- custom_stopwords[custom_stopwords != ""]
+
+                    # Combine default and custom stopwords
+                    all_stopwords <- unique(c(
+                        language_stopwords$word,
+                        custom_stopwords
+                    ))
+
+                    processed_df <- processed_df |>
+                        dplyr::filter(!word %in% all_stopwords)
+                }
+
+                # Count word frequencies
+                loc$wordcloud_df <- processed_df |>
+                    dplyr::count(word, name = "freq") |>
+                    dplyr::arrange(desc(freq))
+
+                # Update slider range based on actual frequency data
+                if (nrow(loc$wordcloud_df) > 0) {
+                    max_freq <- max(loc$wordcloud_df$freq, na.rm = TRUE)
+                    updateSliderInput(
+                        session,
+                        "min_frequency",
+                        min = 1,
+                        max = max_freq,
+                        value = min(input$min_frequency, max_freq)
+                    )
+                }
+
+                loc$processing <- FALSE
+            }
+        )
+
+        # Reactive filtered data for wordcloud
+        filtered_wordcloud_data <- reactive({
+            req(loc$wordcloud_df)
+
+            filtered_df <- loc$wordcloud_df |>
+                dplyr::filter(freq >= input$min_frequency)
+
+            # Update word count info
+            output$word_count_info <- renderText({
+                total_words <- nrow(loc$wordcloud_df)
+                shown_words <- nrow(filtered_df)
+                paste("Showing", shown_words, "of", total_words, "unique words")
+            })
+
+            filtered_df
+        })
+
+        # Render the word cloud
+        output$wordcloud <- wordcloud2::renderWordcloud2({
+            data <- filtered_wordcloud_data()
+
+            if (is.null(data) || nrow(data) == 0) {
+                return(NULL)
+            }
+
+            wordcloud2::wordcloud2(data)
+        })
     })
 }

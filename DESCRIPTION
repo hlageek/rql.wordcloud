@@ -1,15 +1,15 @@
 Package: rql.wordcloud
-Title: What the Package Does (One Line, Title Case)
-Version: 0.0.0.9000
+Title: Visualize word frequencies in wordclouds
+Version: 0.0.0.9014
 Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"))
-Description: What the package does (one paragraph).
-License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
-    license
+    person("Radim", "Hladík", , "requal@requal.app", role = c("aut", "cre"))
+Description: Creates interactive word frequency visualizations from coded text segments in requal. Supports multiple code selection for comparative analysis, with customizable text processing options including stop word removal and punctuation handling. Features real-time filtering by minimum word frequency and provides live feedback on word counts. Built with wordcloud2 for responsive, interactive wordcloud displays.
+License: MIT
 Config/requal/module: TRUE
+Config/requal/displayName: Wordcloud
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 Imports: 
     shiny,
     requal,

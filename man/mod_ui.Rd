@@ -2,13 +2,13 @@
 % Please edit documentation in R/requal_module.R
 \name{mod_ui}
 \alias{mod_ui}
-\title{wordcloud UI Function}
+\title{Wordcloud UI Function}
 \usage{
 mod_ui(id)
 }
 \arguments{
-\item{id, input, output, session}{Internal parameters for {shiny}.}
+\item{id}{Internal parameter for {shiny}.}
 }
 \description{
-A shiny Module.
+A shiny Module for generating a word cloud.
 }

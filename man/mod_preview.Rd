@@ -8,4 +8,5 @@ mod_preview()
 }
 \description{
 This function launches the Shiny app for the wordcloud module.
+It provides a user interface for generating word clouds from text data.
 }

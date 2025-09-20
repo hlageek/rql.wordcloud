@@ -2,17 +2,15 @@
 % Please edit documentation in R/requal_module.R
 \name{mod_server}
 \alias{mod_server}
-\title{wordcloud Server Functions}
+\title{Wordcloud Server Function}
 \usage{
 mod_server(id, api)
 }
 \arguments{
-\item{id}{Internal parameters for {shiny}.}
+\item{id}{Internal parameter for {shiny}.}
 
-\item{con}{Connection object for Requal database.}
-
-\item{user_id}{ID of the Requal user.}
+\item{api}{An instance of the RequalAPI class.}
 }
 \description{
-wordcloud Server Functions
+Wordcloud Server Function
 }
