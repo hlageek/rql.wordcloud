@@ -1,6 +1,6 @@
 Package: rql.wordcloud
 Title: Visualize word frequencies in wordclouds
-Version: 0.0.1.9001
+Version: 0.0.1.9002
 Authors@R: 
     person("Radim", "Hladík", , "requal@requal.app", role = c("aut", "cre"))
 Description: Creates interactive word frequency visualizations from coded text segments in requal. Supports multiple code selection for comparative analysis, with customizable text processing options including stop word removal and punctuation handling. Features real-time filtering by minimum word frequency and provides live feedback on word counts. Built with wordcloud2 for responsive, interactive wordcloud displays.
@@ -16,5 +16,6 @@ Imports:
     dplyr,
     rlang,
     tidytext,
+    stopwords,
     wordcloud2,
     magrittr
